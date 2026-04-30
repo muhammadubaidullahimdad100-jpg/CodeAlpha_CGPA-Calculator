@@ -1,0 +1,275 @@
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <limits>
+#include <iomanip>
+#include <fstream>
+using namespace std;
+class Course
+{
+public:
+    int Credit_Hours;
+    string Grade;
+    float Grade_Points;
+};
+class GPA
+{
+private:
+    Course *courses;
+    int No_of_Courses;
+public:
+    GPA(Course *c, int n)
+    {
+        courses = c;
+        No_of_Courses = n;
+    }
+
+    float Grade_to_Points(string c)
+    {
+        if (c == "A+" || c == "A" || c == "a+" || c == "a")
+            return 4.0;
+        else if (c == "A-" || c == "a-")
+            return 3.7;
+        else if (c == "B+" || c == "b+")
+            return 3.3;
+        else if (c == "B" || c == "b")
+            return 3.0;
+        else if (c == "B-" || c == "b-")
+            return 2.7;
+        else if (c == "C+" || c == "c+")
+            return 2.3;
+        else if (c == "C" || c == "c")
+            return 2.0;
+        else if (c == "D" || c == "d")
+            return 1.0;
+        else if (c == "F" || c == "f")
+            return 0.0;
+        else
+            throw invalid_argument("Invalid grade entered.");
+    }
+
+    void Input()
+    {
+        for (int i = 0; i < No_of_Courses; i++)
+        {
+            cout << "\nEnter Course Number " << i + 1 << " Details" << endl;
+
+            while (true)
+            {
+                try
+                {
+                    cout << "Enter Credit Hours: ";
+                    cin >> courses[i].Credit_Hours;
+
+                    if (cin.fail())
+                    {
+                        throw invalid_argument("Credit hours must be a number.");
+                    }
+
+                    if (courses[i].Credit_Hours <= 0)
+                    {
+                        throw invalid_argument("Credit hours must be greater than 0.");
+                    }
+
+                    break;
+                }
+                catch (const exception &e)
+                {
+                    cout << "Error: " << e.what() << endl;
+
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+            }
+
+            while (true)
+            {
+                try
+                {
+                    cout << "Enter Grade: ";
+                    cin >> courses[i].Grade;
+
+                    courses[i].Grade_Points = Grade_to_Points(courses[i].Grade);
+
+                    break;
+                }
+                catch (const exception &e)
+                {
+                    cout << "Error: " << e.what() << endl;
+                    cout << "Valid Grades: A+, A, A-, B+, B, B-, C+, C, D, F" << endl;
+                }
+            }
+        }
+    }
+
+    int Total_Credit_Hours()
+    {
+        int totalCreditHours = 0;
+
+        for (int i = 0; i < No_of_Courses; i++)
+        {
+            totalCreditHours += courses[i].Credit_Hours;
+        }
+
+        return totalCreditHours;
+    }
+
+    float Total_Grade_Points()
+    {
+        float totalGradePoints = 0;
+
+        for (int i = 0; i < No_of_Courses; i++)
+        {
+            totalGradePoints += courses[i].Grade_Points * courses[i].Credit_Hours;
+        }
+
+        return totalGradePoints;
+    }
+
+    float GPA_Calculation()
+    {
+        int totalCreditHours = Total_Credit_Hours();
+        float totalGradePoints = Total_Grade_Points();
+
+        if (totalCreditHours == 0)
+        {
+            throw runtime_error("Total credit hours cannot be zero.");
+        }
+
+        return totalGradePoints / totalCreditHours;
+    }
+
+    void Display()
+    {
+        cout << fixed << setprecision(2);
+
+        cout << "\n==========================================\n";
+        cout << "              Course Details              \n";
+        cout << "==========================================\n";
+
+        for (int i = 0; i < No_of_Courses; i++)
+        {
+            cout << "\nCourse: " << i + 1 << endl;
+            cout << "Credit Hours: " << courses[i].Credit_Hours << endl;
+            cout << "Grade: " << courses[i].Grade << endl;
+            cout << "Grade Point: " << courses[i].Grade_Points << endl;
+        }
+
+        int totalCreditHours = Total_Credit_Hours();
+        float totalGradePoints = Total_Grade_Points();
+        float gpa = GPA_Calculation();
+
+        cout << "\n==========================================\n";
+        cout << "                 Result                   \n";
+        cout << "==========================================\n";
+
+        cout << "Total Credit Hours: " << totalCreditHours << endl;
+        cout << "Total Grade Points: " << totalGradePoints << endl;
+        cout << "Semester GPA: " << gpa << endl;
+        cout << "Total CGPA: " << gpa << endl;
+    }
+
+    void Save_To_File()
+    {
+        ofstream file("GPA_Result.txt");
+
+        if (!file)
+        {
+            throw runtime_error("File could not be created.");
+        }
+
+        file << fixed << setprecision(2);
+
+        file << "==========================================\n";
+        file << "              GPA CALCULATOR              \n";
+        file << "==========================================\n";
+
+        file << "\nCourse Details\n";
+        file << "------------------------------------------\n";
+
+        for (int i = 0; i < No_of_Courses; i++)
+        {
+            file << "\nCourse: " << i + 1 << endl;
+            file << "Credit Hours: " << courses[i].Credit_Hours << endl;
+            file << "Grade: " << courses[i].Grade << endl;
+            file << "Grade Point: " << courses[i].Grade_Points << endl;
+        }
+
+        int totalCreditHours = Total_Credit_Hours();
+        float totalGradePoints = Total_Grade_Points();
+        float gpa = GPA_Calculation();
+
+        file << "\n==========================================\n";
+        file << "                 Result                   \n";
+        file << "==========================================\n";
+
+        file << "Total Credit Hours: " << totalCreditHours << endl;
+        file << "Total Grade Points: " << totalGradePoints << endl;
+        file << "Semester GPA: " << gpa << endl;
+        file << "Total CGPA: " << gpa << endl;
+
+        file.close();
+
+        cout << "\nResult saved successfully in GPA_Result.txt" << endl;
+    }
+};
+
+int main()
+{
+    int n;
+    Course *courses = nullptr;
+
+    try
+    {
+        cout << "\n==========================================\n";
+        cout << "              GPA CALCULATOR              \n";
+        cout << "==========================================\n";
+
+        while (true)
+        {
+            try
+            {
+                cout << "Enter Number of Courses: ";
+                cin >> n;
+
+                if (cin.fail())
+                {
+                    throw invalid_argument("Number of courses must be a number.");
+                }
+
+                if (n <= 0)
+                {
+                    throw invalid_argument("Number of courses must be greater than 0.");
+                }
+
+                break;
+            }
+            catch (const exception &e)
+            {
+                cout << "Error: " << e.what() << endl;
+
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
+        }
+        courses = new Course[n];
+
+        GPA gpa(courses, n);
+        gpa.Input();
+        gpa.Display();
+        gpa.Save_To_File();
+
+        delete[] courses;
+    }
+    catch (const bad_alloc &e)
+    {
+        cout << "\nError: Memory allocation failed." << endl;
+        delete[] courses;
+    }
+    catch (const exception &e)
+    {
+        cout << "\nError: " << e.what() << endl;
+        delete[] courses;
+    }
+    return 0;
+}
