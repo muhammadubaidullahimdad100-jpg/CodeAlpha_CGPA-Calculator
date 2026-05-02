@@ -5,6 +5,12 @@
 #include <iomanip>
 #include <fstream>
 using namespace std;
+
+// ==========================================
+// CLASS: Course
+// A simple data-holding class (Plain Old Data style)
+// Used to represent a single course's information
+// ==========================================
 class Course
 {
 public:
@@ -12,18 +18,41 @@ public:
     string Grade;
     float Grade_Points;
 };
+
+// ==========================================
+// CLASS: GPA
+// CONCEPT: AGGREGATION
+// GPA "has-a" Course (via pointer) — this is aggregation
+// because GPA uses Course objects but does NOT own/create them.
+// The Course array is created outside (in main) and passed in.
+// If GPA is destroyed, Course objects still exist independently.
+// ==========================================
 class GPA
 {
 private:
-    Course *courses;
+    Course *courses;      // Pointer to an external array of Course objects (Aggregation)
     int No_of_Courses;
+
 public:
+    // ==========================================
+    // CONCEPT: AGGREGATION (continued)
+    // Constructor receives an already-created Course array.
+    // GPA does not allocate or deallocate it — just references it.
+    // This is the key trait of aggregation (vs composition).
+    // ==========================================
     GPA(Course *c, int n)
     {
         courses = c;
         No_of_Courses = n;
     }
 
+    // ==========================================
+    // Grade to Points Converter
+    // CONCEPT: EXCEPTION HANDLING
+    // If an invalid grade string is passed, we throw
+    // std::invalid_argument to signal bad input.
+    // This is caught by the calling function (Input()).
+    // ==========================================
     float Grade_to_Points(string c)
     {
         if (c == "A+" || c == "A" || c == "a+" || c == "a")
@@ -45,15 +74,25 @@ public:
         else if (c == "F" || c == "f")
             return 0.0;
         else
+            // EXCEPTION HANDLING: Throw if grade is unrecognized
             throw invalid_argument("Invalid grade entered.");
     }
 
+    // ==========================================
+    // CONCEPT: EXCEPTION HANDLING (Input Validation)
+    // Two separate try-catch loops handle:
+    //   1. Invalid credit hour input (non-numeric or <= 0)
+    //   2. Invalid grade input (caught from Grade_to_Points)
+    // cin.clear() resets error flags after bad input.
+    // cin.ignore() flushes leftover characters from the buffer.
+    // ==========================================
     void Input()
     {
         for (int i = 0; i < No_of_Courses; i++)
         {
             cout << "\nEnter Course Number " << i + 1 << " Details" << endl;
 
+            // --- Validating Credit Hours ---
             while (true)
             {
                 try
@@ -61,27 +100,24 @@ public:
                     cout << "Enter Credit Hours: ";
                     cin >> courses[i].Credit_Hours;
 
+                    // cin.fail() is true if input type didn't match (e.g., user typed "abc")
                     if (cin.fail())
-                    {
                         throw invalid_argument("Credit hours must be a number.");
-                    }
 
                     if (courses[i].Credit_Hours <= 0)
-                    {
                         throw invalid_argument("Credit hours must be greater than 0.");
-                    }
 
-                    break;
+                    break; // Valid input — exit loop
                 }
                 catch (const exception &e)
                 {
                     cout << "Error: " << e.what() << endl;
-
-                    cin.clear();
-                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cin.clear();                                         // Clear error state
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Flush bad input
                 }
             }
 
+            // --- Validating Grade (exception flows from Grade_to_Points) ---
             while (true)
             {
                 try
@@ -89,9 +125,10 @@ public:
                     cout << "Enter Grade: ";
                     cin >> courses[i].Grade;
 
+                    // Grade_to_Points throws if grade is invalid
                     courses[i].Grade_Points = Grade_to_Points(courses[i].Grade);
 
-                    break;
+                    break; // Valid grade — exit loop
                 }
                 catch (const exception &e)
                 {
@@ -102,46 +139,50 @@ public:
         }
     }
 
+    // ==========================================
+    // Sums all credit hours across courses
+    // ==========================================
     int Total_Credit_Hours()
     {
         int totalCreditHours = 0;
-
         for (int i = 0; i < No_of_Courses; i++)
-        {
             totalCreditHours += courses[i].Credit_Hours;
-        }
-
         return totalCreditHours;
     }
 
+    // ==========================================
+    // Sums weighted grade points (Grade_Points × Credit_Hours)
+    // ==========================================
     float Total_Grade_Points()
     {
         float totalGradePoints = 0;
-
         for (int i = 0; i < No_of_Courses; i++)
-        {
             totalGradePoints += courses[i].Grade_Points * courses[i].Credit_Hours;
-        }
-
         return totalGradePoints;
     }
 
+    // ==========================================
+    // GPA Formula: Total Weighted Points / Total Credit Hours
+    // CONCEPT: EXCEPTION HANDLING
+    // Throws runtime_error if credit hours is 0 (division by zero guard)
+    // ==========================================
     float GPA_Calculation()
     {
         int totalCreditHours = Total_Credit_Hours();
         float totalGradePoints = Total_Grade_Points();
 
         if (totalCreditHours == 0)
-        {
             throw runtime_error("Total credit hours cannot be zero.");
-        }
 
         return totalGradePoints / totalCreditHours;
     }
 
+    // ==========================================
+    // Displays formatted results to the console
+    // ==========================================
     void Display()
     {
-        cout << fixed << setprecision(2);
+        cout << fixed << setprecision(2); // iomanip: fixes decimal places to 2
 
         cout << "\n==========================================\n";
         cout << "              Course Details              \n";
@@ -169,14 +210,22 @@ public:
         cout << "Total CGPA: " << gpa << endl;
     }
 
+    // ==========================================
+    // CONCEPT: FILE HANDLING
+    // Uses ofstream (output file stream) to write results to a .txt file.
+    // Steps:
+    //   1. Open file using ofstream constructor
+    //   2. Check if file opened successfully (if !file)
+    //   3. Write data using << operator (same as cout but to file)
+    //   4. Close the file explicitly with file.close()
+    // EXCEPTION HANDLING: Throws runtime_error if file can't be created
+    // ==========================================
     void Save_To_File()
     {
-        ofstream file("GPA_Result.txt");
+        ofstream file("GPA_Result.txt"); // Opens/creates file for writing
 
-        if (!file)
-        {
+        if (!file) // File open failed (e.g., permission denied)
             throw runtime_error("File could not be created.");
-        }
 
         file << fixed << setprecision(2);
 
@@ -208,15 +257,22 @@ public:
         file << "Semester GPA: " << gpa << endl;
         file << "Total CGPA: " << gpa << endl;
 
-        file.close();
+        file.close(); // Always close the file after writing
 
         cout << "\nResult saved successfully in GPA_Result.txt" << endl;
     }
 };
 
+// ==========================================
+// MAIN FUNCTION
+// ==========================================
 int main()
 {
     int n;
+
+    // CONCEPT: DYNAMIC MEMORY ALLOCATION
+    // Initialized to nullptr as a safety measure.
+    // Actual allocation happens after we know the number of courses.
     Course *courses = nullptr;
 
     try
@@ -225,6 +281,7 @@ int main()
         cout << "              GPA CALCULATOR              \n";
         cout << "==========================================\n";
 
+        // --- Validate number of courses ---
         while (true)
         {
             try
@@ -233,43 +290,58 @@ int main()
                 cin >> n;
 
                 if (cin.fail())
-                {
                     throw invalid_argument("Number of courses must be a number.");
-                }
 
                 if (n <= 0)
-                {
                     throw invalid_argument("Number of courses must be greater than 0.");
-                }
 
                 break;
             }
             catch (const exception &e)
             {
                 cout << "Error: " << e.what() << endl;
-
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
             }
         }
-        courses = new Course[n];
 
+        // ==========================================
+        // CONCEPT: DYNAMIC MEMORY ALLOCATION
+        // 'new' allocates an array of Course objects on the HEAP at runtime.
+        // Size (n) is only known at runtime — not compile time.
+        // This is why static arrays (Course courses[5]) aren't used here.
+        // Must be manually freed with 'delete[]' to avoid memory leaks.
+        // ==========================================
+        courses = new Course[n]; // Heap allocation — size determined at runtime
+
+        // CONCEPT: AGGREGATION
+        // GPA object is given the externally created Course array.
+        // GPA uses it but doesn't own it — main() owns and frees it.
         GPA gpa(courses, n);
+
         gpa.Input();
         gpa.Display();
         gpa.Save_To_File();
 
-        delete[] courses;
+        delete[] courses; // DYNAMIC MEMORY: Free heap memory after use
     }
+    // ==========================================
+    // CONCEPT: EXCEPTION HANDLING (in main)
+    // bad_alloc is thrown by 'new' if heap memory is exhausted.
+    // Caught separately to give a specific memory error message.
+    // The general 'exception' catch handles anything else propagated up.
+    // delete[] is called in both catches to avoid memory leaks on error.
+    // ==========================================
     catch (const bad_alloc &e)
     {
         cout << "\nError: Memory allocation failed." << endl;
-        delete[] courses;
+        delete[] courses; // Safe even if courses is nullptr
     }
     catch (const exception &e)
     {
         cout << "\nError: " << e.what() << endl;
         delete[] courses;
     }
+
     return 0;
 }
